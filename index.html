@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Associate Price Calculator</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b5ed7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Price Calc">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--text:#14213d;--muted:#5b6475;--accent:#0b5ed7;--line:#d9dee8;--box-sizing:border-box;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141c;--card:#1a212c;--text:#eef1f6;--muted:#9aa5b8;--accent:#6aa5ff;--line:#2e3846}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
+.wrap{max-width:460px;margin:0 auto}
+h1{font-size:1.3rem;margin:8px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+input{width:100%;font-size:1.2rem;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.row{display:flex;gap:10px}.row>div{flex:1}
+.line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+.line:last-child{border:none}
+.total{font-size:1.6rem;font-weight:700;color:var(--accent)}
+.note{font-size:.78rem;color:var(--muted);line-height:1.4}
+.join{display:block;margin-top:14px;padding:14px;text-align:center;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
+button{font-size:1rem;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Associate Price Calculator</h1>
+<div class="card">
+<label for="price">Item price ($)</label>
+<input id="price" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+<div class="row">
+<div><label for="disc">Discount</label><select id="disc" style="width:100%;font-size:1.2rem;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)"><option value="20">20% standard</option><option value="30">30% promo</option></select></div>
+<div><label for="tax">Sales tax (%)</label><input id="tax" type="number" inputmode="decimal" step="0.001" min="0" value="8.25"></div>
+</div>
+<label for="qty">Quantity</label>
+<input id="qty" type="number" inputmode="numeric" min="1" step="1" value="1">
+<label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:1rem;margin-top:14px"><input id="vet" type="checkbox" style="width:24px;height:24px;padding:0"> Veteran discount (extra 10%, July &amp; November)</label>
+<label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:1rem;margin-top:14px"><input id="card" type="checkbox" style="width:24px;height:24px;padding:0"> Academy credit card (extra 5% off final total)</label>
+</div>
+<div class="card" aria-live="polite">
+<div class="line"><span>Subtotal</span><span id="sub">$0.00</span></div>
+<div class="line"><span>Employee discount (<span id="pct">20</span>%)</span><span id="dsc">-$0.00</span></div>
+<div class="line"><span>Veteran discount (10%)</span><span id="vdsc">-$0.00</span></div>
+<div class="line"><span>After discounts</span><span id="aft">$0.00</span></div>
+<div class="line"><span>Sales tax</span><span id="tx">$0.00</span></div>
+<div class="line"><span>Total with tax</span><span id="tot">$0.00</span></div>
+<div class="line"><span>Card discount (5%)</span><span id="cdsc">-$0.00</span></div>
+<div class="line"><strong>Final price</strong><span class="total" id="fin">$0.00</span></div>
+</div>
+<button id="reset">Clear item</button>
+<a class="join" href="https://www.reddit.com/r/AcademySportsGroup/" target="_blank" rel="noopener noreferrer">Join our employee community on Reddit: r/AcademySportsGroup</a>
+<p class="note">Choose your discount and enter your local tax rate (remembered on this device when possible). Check your store’s policy for excluded items. Unofficial tool, not affiliated with or endorsed by Academy Sports + Outdoors. Estimates only; the register price is final.</p>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>(n<0?"-":"")+"$"+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+try{const d=localStorage.getItem("disc"),t=localStorage.getItem("tax");if(d==="20"||d==="30")$("disc").value=d;if(t)$("tax").value=t;}catch(e){}
+function calc(){
+ const p=parseFloat($("price").value)||0,d=parseFloat($("disc").value)||0,t=parseFloat($("tax").value)||0,q=Math.max(1,parseInt($("qty").value)||1);
+ const sub=Math.round(p*q*100)/100,dsc=Math.round(sub*d)/100,a1=sub-dsc,vd=$("vet").checked?Math.round(a1*10)/100:0,aft=a1-vd,tx=Math.round(aft*t)/100,tot=aft+tx,cd=$("card").checked?Math.round(tot*5)/100:0;
+ $("pct").textContent=d;$("sub").textContent=money(sub);$("dsc").textContent=money(-dsc);$("aft").textContent=money(aft);$("tx").textContent=money(tx);$("vdsc").textContent=money(-vd);$("tot").textContent=money(tot);$("cdsc").textContent=money(-cd);$("fin").textContent=money(tot-cd);
+ try{localStorage.setItem("disc",$("disc").value);localStorage.setItem("tax",$("tax").value);}catch(e){}
+}
+["price","disc","tax","qty","vet","card"].forEach(i=>$(i).addEventListener("input",calc));
+$("reset").onclick=()=>{$("price").value="";$("qty").value=1;calc();$("price").focus();};
+calc();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}
+</script>
+</body>
+</html>
